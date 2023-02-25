@@ -15,7 +15,7 @@ playerImg = playerImg_face
 playerX = 330
 playerY = 420
 
-
+clock=pygame.time.Clock()
 def player(x, y):
     screen.blit(playerImg, (x, y))
 
@@ -36,17 +36,17 @@ while running:
 
     if event.type == pygame.KEYDOWN:
         if event.key == pygame.K_LEFT:
-            playerX -= 0.1
+            playerX -= 1.8
 
         if event.key == pygame.K_RIGHT:
-            playerX += 0.1
+            playerX += 1.8
 
         if event.key == pygame.K_UP:
-            playerY -= 0.1
+            playerY -= 1.8
             playerImg = playerImg_back
 
         if event.key == pygame.K_DOWN:
-            playerY += 0.1
+            playerY += 1.8
             playerImg = playerImg_face
 
     if playerX <= -20:
@@ -55,5 +55,6 @@ while running:
         playerX = 690
 
     player(playerX, playerY)
-
+    clock.tick(60)
     pygame.display.update()
+
