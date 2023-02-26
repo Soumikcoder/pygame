@@ -4,7 +4,7 @@ pygame.init()
 
 # Caption and Icon
 pygame.display.set_caption("Invader")
-icon = pygame.image.load('../resource/logo.png')
+icon = pygame.image.load('./resource/logo.png')
 pygame.display.set_icon(icon)
 
 # player
