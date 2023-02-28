@@ -1,5 +1,4 @@
 import pygame
-
 #
 pygame.init()
 
@@ -11,6 +10,8 @@ pygame.display.set_icon(icon)
 # player
 playerImg_face = pygame.image.load('./resource/pov.png')
 playerImg_back = pygame.image.load('./resource/povback.png')
+playerImg_right = pygame.image.load('./resource/povright.png')
+playerImg_left = pygame.image.load('./resource/povleft.png')
 playerImg = playerImg_face
 playerX = 330
 playerY = 420
@@ -19,12 +20,15 @@ clock=pygame.time.Clock()
 def player(x, y):
     screen.blit(playerImg, (x, y))
 
+#seed generation
+seed=random.randint(0,9);
+chunk_coords=[0,0]
 
 # create screen
 screen = pygame.display.set_mode((800, 600))
 
 running = True
-
+# update_chunk(coords)
 while running:
 
     # RGB = Red, Green, Blue
@@ -34,18 +38,19 @@ while running:
         if event.type == pygame.QUIT:
             running = False
 
-    if event.type == pygame.KEYDOWN:
-        if event.key == pygame.K_LEFT:
+    if pygame.key.get_pressed()[pygame.K_LEFT] or pygame.key.get_pressed()[pygame.K_a] :
             playerX -= 1.8
+            playerImg = playerImg_left
 
-        if event.key == pygame.K_RIGHT:
+    if pygame.key.get_pressed()[pygame.K_RIGHT] or pygame.key.get_pressed()[pygame.K_d]:
             playerX += 1.8
+            playerImg = playerImg_right
 
-        if event.key == pygame.K_UP:
+    if pygame.key.get_pressed()[pygame.K_UP] or pygame.key.get_pressed()[pygame.K_w]:
             playerY -= 1.8
             playerImg = playerImg_back
 
-        if event.key == pygame.K_DOWN:
+    if pygame.key.get_pressed()[pygame.K_DOWN] or pygame.key.get_pressed()[pygame.K_s]:
             playerY += 1.8
             playerImg = playerImg_face
 
@@ -53,8 +58,10 @@ while running:
         playerX = -20
     elif playerX >= 690:
         playerX = 690
-
+    if playerY <= 0:
+        playerY = 0
+    elif playerY >= 470:
+        playerY = 470
     player(playerX, playerY)
-    clock.tick(60)
+    clock.tick(120)
     pygame.display.update()
-
