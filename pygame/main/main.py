@@ -1,17 +1,18 @@
 import pygame
+import random
 #
 pygame.init()
 
 # Caption and Icon
 pygame.display.set_caption("Invader")
-icon = pygame.image.load('./resource/logo.png')
+icon = pygame.image.load('pygame/resource/logo.png')
 pygame.display.set_icon(icon)
 
 # player
-playerImg_face = pygame.image.load('./resource/pov.png')
-playerImg_back = pygame.image.load('./resource/povback.png')
-playerImg_right = pygame.image.load('./resource/povright.png')
-playerImg_left = pygame.image.load('./resource/povleft.png')
+playerImg_face = pygame.image.load('pygame/resource/pov.png')
+playerImg_back = pygame.image.load('pygame/resource/povback.png')
+playerImg_right = pygame.image.load('pygame/resource/povright.png')
+playerImg_left = pygame.image.load('pygame/resource/povleft.png')
 playerImg = playerImg_face
 playerX = 330
 playerY = 420
