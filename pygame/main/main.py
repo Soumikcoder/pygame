@@ -1,5 +1,7 @@
 import pygame
 import random
+from math import sin, cos, pi, atan2
+
 #
 pygame.init()
 
@@ -13,19 +15,27 @@ playerImg_straight = pygame.image.load('pygame/resource/player_straight.png')
 playerImg_right = pygame.image.load('pygame/resource/player_right.png')
 playerImg_left = pygame.image.load('pygame/resource/player_left.png')
 playerImg0 = playerImg_straight
-rect0 = playerImg0.get_rect()
+rect0_player = playerImg0.get_rect()
 playerX = 400
 playerY = 300
-rect0.center = (playerX, playerY)
+rect0_player.center = (playerX, playerY)
+angle_player = 0
+angle_player_r = 0
 
+playerImg_gun0 = pygame.image.load('pygame/resource/player_gun.png')
+angle_gun = 0
 
 clock = pygame.time.Clock()
+
+enemy_cords = (0, 0)
 
 
 def player():
 
     global playerX
     global playerY
+    global angle_gun
+    angle_gun += 1
 
     if playerX <= 70:
         playerX = 70
@@ -36,8 +46,23 @@ def player():
     elif playerY >= 530:
         playerY = 530
 
-    rect0.center = (playerX, playerY)
-    screen.blit(playerImg0, rect0)
+    rect0_player.center = (playerX, playerY)
+    playerImg1 = pygame.transform.rotate(playerImg0, angle_player)
+    rect1_player = playerImg1.get_rect()
+    rect1_player.center = rect0_player.center
+
+    xdist = enemy_cords[0] - rect0_player.centerx
+    ydist = enemy_cords[1] - rect0_player.centery
+
+    angle_gun =  atan2(xdist, ydist) * 180 / pi + 180    
+    angle_gun %= 360
+
+    playerImg_gun1 = pygame.transform.rotate(playerImg_gun0, angle_gun)
+    rect1_gun = playerImg_gun1.get_rect()
+    rect1_gun.center = rect0_player.center
+
+    screen.blit(playerImg1, rect1_player)
+    screen.blit(playerImg_gun1, rect1_gun)
 
 
 # seed generation
@@ -50,6 +75,7 @@ screen = pygame.display.set_mode((800, 600))
 running = True
 # update_chunk(coords)
 while running:
+    clock.tick(120)
 
     # RGB = Red, Green, Blue
     screen.fill((40, 40, 40))
@@ -58,23 +84,45 @@ while running:
         if event.type == pygame.QUIT:
             running = False
 
-    if pygame.key.get_pressed()[pygame.K_LEFT] or pygame.key.get_pressed()[pygame.K_a]:
-        playerX -= 1.8
+    keys = pygame.key.get_pressed()
+
+    # player position
+    if keys[pygame.K_LEFT] or keys[pygame.K_a]:
+        if keys[pygame.K_DOWN] or keys[pygame.K_s]:
+            angle_player -= .5
+        else:
+            angle_player += .5
+
+    if keys[pygame.K_RIGHT] or keys[pygame.K_d]:
+        if keys[pygame.K_DOWN] or keys[pygame.K_s]:
+            angle_player += .5
+        else:
+            angle_player -= .5
+
+    angle_player %= 360
+    angle_player_r = (angle_player * pi) / 180
+
+    if keys[pygame.K_UP] or keys[pygame.K_w]:
+        playerY -= 1.8 * cos(angle_player_r)
+        playerX -= 1.8 * sin(angle_player_r)
+
+    if keys[pygame.K_DOWN] or keys[pygame.K_s]:
+        playerY += 1.8 * cos(angle_player_r)
+        playerX += 1.8 * sin(angle_player_r)
+
+    # player image
+    if keys[pygame.K_UP] or keys[pygame.K_w]:
+        playerImg0 = playerImg_straight
+
+    if keys[pygame.K_DOWN] or keys[pygame.K_s]:
+        playerImg0 = playerImg_straight
+
+    if keys[pygame.K_LEFT] or keys[pygame.K_a]:
         playerImg0 = playerImg_left
 
-    if pygame.key.get_pressed()[pygame.K_RIGHT] or pygame.key.get_pressed()[pygame.K_d]:
-        playerX += 1.8
+    if keys[pygame.K_RIGHT] or keys[pygame.K_d]:
         playerImg0 = playerImg_right
-
-    if pygame.key.get_pressed()[pygame.K_UP] or pygame.key.get_pressed()[pygame.K_w]:
-        playerY -= 1.8
-        playerImg0 = playerImg_straight
-
-    if pygame.key.get_pressed()[pygame.K_DOWN] or pygame.key.get_pressed()[pygame.K_s]:
-        playerY += 1.8
-        playerImg0 = playerImg_straight
 
     player()
 
-    clock.tick(120)
     pygame.display.update()
