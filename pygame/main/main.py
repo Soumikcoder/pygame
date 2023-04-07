@@ -1,9 +1,7 @@
 import pygame
-import random
+from random import randint
 from math import sin, cos, pi, atan2
-import os
-from os import listdir
-from os.path import isfile, join
+
 
 #
 pygame.init()
@@ -20,9 +18,12 @@ pygame.display.set_caption("Invader")
 icon = pygame.image.load('pygame/resource/logo.png')
 pygame.display.set_icon(icon)
 
+cng_player_img = 2
+ground = pygame.image.load('pygame/resource/ground.jpg')
+# grass = pygame.image.load('pygame/resource/grass.jpg')
 
-# player
-class Player():
+
+class Player(pygame.sprite.Sprite):
     Img = pygame.image.load('pygame/resource/player_straight.png')
     Img_right = pygame.image.load('pygame/resource/player_right.png')
     Img_left = pygame.image.load('pygame/resource/player_left.png')
@@ -31,22 +32,25 @@ class Player():
     rtion = 1
 
     def __init__(self, x, y):
-        global Img
+        super().__init__()
         self.x = x
         self.y = y
+        self.width = 128
+        self.height = 128
         self.Img_loaded = self.Img
+        self.Img_show = self.Img
+        self.rect = self.Img_show.get_rect()
+        self.gun_show = self.Img_gun
+        self.rect_gun = self.gun_show.get_rect()
         self.angle = 0
         self.angle_r = 0
         self.gun_aim = 0
-        
-    def image(self):
-        self.Img_loaded = self.Img
+        self.gun_range = 200
+        self.target = None
+        self.die = 1000
 
-    def image_l(self):
-        self.Img_loaded = self.Img_left
-
-    def image_r(self):
-        self.Img_loaded = self.Img_right
+    def cords(self):
+        return self.x, self.y
 
     def forward(self):
         self.x -= self.speed * sin(self.angle_r)
@@ -120,33 +124,168 @@ class Player():
             else:
                 self.angle -= (340-self.angle)/25
 
-    def draw(self):
-        Img_show = pygame.transform.rotate(self.Img_loaded, self.angle)
-        rect = Img_show.get_rect()
-        rect.center = (self.x, self.y)
+    def draw(self, zombies, fps):
+        self.Img_show = pygame.transform.rotate(self.Img_loaded, self.angle)
+        self.rect = self.Img_show.get_rect()
+        self.rect.center = (self.x, self.y)
 
-        
-        xdist = enemy_cords[0] - rect.centerx
-        ydist = enemy_cords[1] - rect.centery
+        if self.target and (abs(self.target.x-self.x) + abs(self.target.y-self.y)) < self.gun_range*2:
+            self.target.die -= 60/fps
+            if self.target.die <= 0:
+                self.target = None
+                dist = self.gun_range*2
+                rough = 0
+                for zombie in zombies:
+                    if (zombie.x > self.x - self.gun_range and
+                        zombie.x < self.x + self.gun_range and
+                        zombie.y > self.y - self.gun_range and
+                        zombie.y < self.y + self.gun_range and
+                            zombie.die > 0):
 
-        self.gun_aim = atan2(xdist, ydist) * 180 / pi + 180
-        self.gun_aim %= 360
+                        rough = (abs(zombie.x-self.x) + abs(zombie.y-self.y))
+                        if dist > rough:
+                            dist = rough
+                            self.target = zombie
+        else:
+            dist = self.gun_range*2
+            rough = 0
+            for zombie in zombies:
+                if (zombie.x > self.x - self.gun_range and
+                    zombie.x < self.x + self.gun_range and
+                    zombie.y > self.y - self.gun_range and
+                    zombie.y < self.y + self.gun_range and
+                        zombie.die > 0):
 
-        gun_show = pygame.transform.rotate(self.Img_gun, self.gun_aim)
-        rect_gun = gun_show.get_rect()
-        rect_gun.center = rect.center
+                    rough = (abs(zombie.x-self.x) + abs(zombie.y-self.y))
+                    if dist > rough:
+                        dist = rough
+                        self.target = zombie
+        if self.target:
+            xdist = self.target.x - self.x
+            ydist = self.target.y - self.y
 
-        screen.blit(Img_show, rect)
-        screen.blit(gun_show, rect_gun)
+            self.gun_aim = atan2(xdist, ydist) * 180 / pi + 180
+            self.gun_aim %= 360
+            self.gun_show = pygame.transform.rotate(self.Img_gun, self.gun_aim)
+        else:
+            self.gun_show = pygame.transform.rotate(self.Img_gun, self.angle)
 
-enemy_cords = (0, 0)
-class Zombie():
+        self.rect_gun = self.gun_show.get_rect()
+        self.rect_gun.center = self.rect.center
+
+        screen.blit(self.Img_show, self.rect)
+        screen.blit(self.gun_show, self.rect_gun)
+
+        if self.die <= 0:
+            self.kill()
+
+
+class Zombie(pygame.sprite.Sprite):
+    Img = pygame.image.load('pygame/resource/zombie.png')
+    Img_flip = pygame.image.load('pygame/resource/zombie_flip.png')
+    Img_die = pygame.image.load('pygame/resource/die.png')
+    Img_die_flip = pygame.image.load('pygame/resource/die_flip.png')
+    speed = 1
+    rtion = 1
 
     def __init__(self):
-        pass
+        super().__init__()
+        if randint(0, 1):
+            self.x = randint(WIDTH-100, WIDTH+100) % WIDTH
+            self.y = randint(0, HEIGHT)
+        else:
+            self.x = randint(0, WIDTH)
+            self.y = randint(HEIGHT-100, HEIGHT+100) % HEIGHT
+        self.width = 30
+        self.height = 42
+        self.Img_loaded = self.Img
+        self.rect = self.Img_loaded.get_rect()
+        self.range = 100
+        self.aim = randint(0, 7)
+        self.change_aim = randint(1, 10)
+        self.die = 25
+        self.corps = 60
+        self.attack = 1
 
-cng_player_img = -1;
-def handle_move(player):
+    def move(self, player, fps):
+        xdist = player.x - self.x
+        ydist = player.y - self.y
+
+        if abs(xdist) + abs(ydist) < self.range*2:
+            self.aim = atan2(xdist, ydist) + pi
+            if abs(xdist) + abs(ydist) < 40:
+                self.attack = 0
+            else:
+                self.attack = 1
+        else:
+            self.attack = 1
+            self.change_aim -= 1/fps
+            if self.change_aim < 0:
+                self.change_aim = randint(1, 10)
+                self.aim = randint(0, 7)
+
+            if self.x < 0:
+                self.x = 0
+                self.aim = randint(4, 6)
+            elif self.x > WIDTH:
+                self.x = WIDTH
+                self.aim = randint(1, 3)
+            if self.y < 0:
+                self.y = 0
+                self.aim = randint(2, 5)
+            elif self.y > HEIGHT:
+                self.y = HEIGHT
+                self.aim = randint(-2, 5)
+        if self.attack:
+            self.x -= self.speed * sin(self.aim)
+            self.y -= self.speed * cos(self.aim)
+        else:
+            player.die -= 1/fps
+
+    def draw(self):
+
+        if self.aim > 0 and self.aim < pi:
+            if self.die <= 0:
+                self.Img_loaded = self.Img_die_flip
+            else:
+                self.Img_loaded = self.Img_flip
+        else:
+            if self.die <= 0:
+                self.Img_loaded = self.Img_die
+            else:
+                self.Img_loaded = self.Img
+
+        self.rect = self.Img_loaded.get_rect()
+        self.rect.center = (self.x, self.y)
+
+        screen.blit(self.Img_loaded, self.rect)
+
+        if self.die <= 0:
+            self.corps -= 1
+            if self.corps < 0:
+                self.kill()
+
+
+class Wall(pygame.sprite.Sprite):
+    Img = pygame.image.load('pygame/resource/wall.jpg')
+
+    def __init__(self, x, y):
+        super().__init__()
+        self.x = x
+        self.y = y
+        self.width = 20
+        self.height = 20
+        self.Img_loaded = self.Img
+        self.rect = self.Img_loaded.get_rect()
+
+    def draw(self):
+        self.rect = self.Img_loaded.get_rect()
+        self.rect.center = (self.x, self.y)
+
+        screen.blit(self.Img_loaded, self.rect)
+
+
+def handle_input(player):
     global cng_player_img
     keys = pygame.key.get_pressed()
 
@@ -178,32 +317,38 @@ def handle_move(player):
     if keys[pygame.K_LEFT] or keys[pygame.K_a]:
         if cng_player_img != 0:
             cng_player_img = 0
-            player.image_l()
+            player.Img_loaded = player.Img_left
 
     elif keys[pygame.K_RIGHT] or keys[pygame.K_d]:
         if cng_player_img != 1:
             cng_player_img = 1
-            player.image_r()
+            player.Img_loaded = player.Img_right
 
     elif keys[pygame.K_UP] or keys[pygame.K_w] or keys[pygame.K_DOWN] or keys[pygame.K_s]:
         if cng_player_img != 2:
             cng_player_img = 2
-            player.image()
+            player.Img_loaded = player.Img
 
 
-grass = pygame.image.load('pygame/resource/grass.jpg')
-def draw(player):
-    # back ground
-    for i in range(0, WIDTH, 128):
-        for j in range(0, HEIGHT, 128):
-            screen.blit(grass, (i, j))
-    # player 
-    player.draw()
-
-    pygame.display.update()
+zombies = pygame.sprite.Group()
+players = pygame.sprite.Group()
 
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
-player = Player(WIDTH/2, HEIGHT/2)
+
+def start():
+    players.add(Player(WIDTH/2, HEIGHT/2))
+
+def spawn():
+    for i in range(25):
+        zombies.add(Zombie())
+
+def kill():
+    for zombie in zombies:
+        zombie.die = 0
+
+walls = []
+for i in range(0):
+    walls.append(Wall(22, 78))
 
 while running:
     clock.tick(fps)
@@ -211,7 +356,39 @@ while running:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
+        if event.type == pygame.KEYDOWN and event.key == pygame.K_z:
+            spawn()
+        if event.type == pygame.KEYDOWN and event.key == pygame.K_k:
+            kill()
+        if event.type == pygame.KEYDOWN and event.key == pygame.K_p:
+            if not players:
+                start()
 
-    handle_move(player)
+    for player in players:
+        handle_input(player)
 
-    draw(player)
+        for zombie in zombies:
+            if zombie.die > 0:
+                zombie.move(player, fps)
+
+    # background
+    for i in range(0, WIDTH, 128):
+        for j in range(0, HEIGHT, 128):
+            screen.blit(ground, (i, j))
+    # walls
+    for wall in walls:
+        wall.draw()
+
+    # player
+    for player in players:
+        player.draw(zombies, fps)
+
+    # zombies
+    for zombie in zombies:
+        zombie.draw()
+
+    pygame.display.update()
+
+# p to create player
+# z to creat zombies
+# k to kill all zombies
