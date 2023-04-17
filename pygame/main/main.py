@@ -20,7 +20,14 @@ pygame.display.set_icon(icon)
 
 cng_player_img = 2
 ground = pygame.image.load('pygame/resource/ground.jpg')
-# grass = pygame.image.load('pygame/resource/grass.jpg')
+
+# groups
+zombies = pygame.sprite.Group()
+players = pygame.sprite.Group()
+
+# screen
+screen = pygame.display.set_mode((WIDTH, HEIGHT))
+level = 0
 
 
 class Player(pygame.sprite.Sprite):
@@ -47,10 +54,8 @@ class Player(pygame.sprite.Sprite):
         self.gun_aim = 0
         self.gun_range = 200
         self.target = None
-        self.die = 1000
-
-    def cords(self):
-        return self.x, self.y
+        self.power = 100
+        self.die = 500
 
     def forward(self):
         self.x -= self.speed * sin(self.angle_r)
@@ -130,7 +135,7 @@ class Player(pygame.sprite.Sprite):
         self.rect.center = (self.x, self.y)
 
         if self.target and (abs(self.target.x-self.x) + abs(self.target.y-self.y)) < self.gun_range*2:
-            self.target.die -= 60/fps
+            self.target.die -= self.power/fps
             if self.target.die <= 0:
                 self.target = None
                 dist = self.gun_range*2
@@ -188,7 +193,7 @@ class Zombie(pygame.sprite.Sprite):
     speed = 1
     rtion = 1
 
-    def __init__(self):
+    def __init__(self, level):
         super().__init__()
         if randint(0, 1):
             self.x = randint(WIDTH-100, WIDTH+100) % WIDTH
@@ -203,7 +208,8 @@ class Zombie(pygame.sprite.Sprite):
         self.range = 100
         self.aim = randint(0, 7)
         self.change_aim = randint(1, 10)
-        self.die = 25
+        self.die = 25*level
+        self.power = 2*level
         self.corps = 60
         self.attack = 1
 
@@ -240,7 +246,7 @@ class Zombie(pygame.sprite.Sprite):
             self.x -= self.speed * sin(self.aim)
             self.y -= self.speed * cos(self.aim)
         else:
-            player.die -= 1/fps
+            player.die -= self.power/fps
 
     def draw(self):
 
@@ -330,21 +336,21 @@ def handle_input(player):
             player.Img_loaded = player.Img
 
 
-zombies = pygame.sprite.Group()
-players = pygame.sprite.Group()
-
-screen = pygame.display.set_mode((WIDTH, HEIGHT))
-
 def start():
     players.add(Player(WIDTH/2, HEIGHT/2))
 
+
 def spawn():
+    global level
+    level += 1
     for i in range(25):
-        zombies.add(Zombie())
+        zombies.add(Zombie(level))
+
 
 def kill():
     for zombie in zombies:
         zombie.die = 0
+
 
 walls = []
 for i in range(0):
