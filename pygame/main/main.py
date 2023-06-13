@@ -12,29 +12,24 @@ HEIGHT = 600
 fps = 60
 running = True
 clock = pygame.time.Clock()
-
 # Caption and Icon
 pygame.display.set_caption("Invader")
-icon = pygame.image.load('../resource/logo.png')
+icon = pygame.image.load('resource/logo.png')
 pygame.display.set_icon(icon)
 
 cng_player_img = 2
-ground = pygame.image.load('../resource/ground.jpg')
+ground = pygame.image.load('resource/ground.jpg')
+wall=pygame.image.load('resource/wall.jpg')
 
-# groups
-zombies = pygame.sprite.Group()
-players = pygame.sprite.Group()
+# grass = pygame.image.load('pygame/resource/grass.jpg')
 
-# screen
-screen = pygame.display.set_mode((WIDTH, HEIGHT))
-level = 0
 offset=pygame.math.Vector2()
 
 class Player(pygame.sprite.Sprite):
-    Img = pygame.image.load('../resource/player_straight.png')
-    Img_right = pygame.image.load('../resource/player_right.png')
-    Img_left = pygame.image.load('../resource/player_left.png')
-    Img_gun = pygame.image.load('../resource/player_gun.png')
+    Img = pygame.image.load('resource/player_straight.png')
+    Img_right = pygame.image.load('resource/player_right.png')
+    Img_left = pygame.image.load('resource/player_left.png')
+    Img_gun = pygame.image.load('resource/player_gun.png')     
     speed = 2
     rtion = 1
 
@@ -54,8 +49,10 @@ class Player(pygame.sprite.Sprite):
         self.gun_aim = 0
         self.gun_range = 200
         self.target = None
-        self.power = 100
-        self.die = 500
+        self.die = 1000
+
+    def cords(self):
+        return self.x, self.y
 
     def forward(self):
         self.x -= self.speed * sin(self.angle_r)
@@ -136,7 +133,7 @@ class Player(pygame.sprite.Sprite):
         offset.y=(HEIGHT/2)-self.y
         offset.x=(WIDTH/2)-self.x
         if self.target and (abs(self.target.x-self.x) + abs(self.target.y-self.y)) < self.gun_range*2:
-            self.target.die -= self.power/fps
+            self.target.die -= 60/fps
             if self.target.die <= 0:
                 self.target = None
                 dist = self.gun_range*2
@@ -178,7 +175,6 @@ class Player(pygame.sprite.Sprite):
 
         self.rect_gun = self.gun_show.get_rect()
         self.rect_gun.center = self.rect.center
-
         rectoff=[self.rect.x+offset.x,self.rect.y+offset.y]
         rectoff_gun=[self.rect_gun.x+offset.x,self.rect_gun.y+offset.y]
         screen.blit(self.Img_show,rectoff)
@@ -189,14 +185,14 @@ class Player(pygame.sprite.Sprite):
 
 
 class Zombie(pygame.sprite.Sprite):
-    Img = pygame.image.load('../resource/zombie.png')
-    Img_flip = pygame.image.load('../resource/zombie_flip.png')
-    Img_die = pygame.image.load('../resource/die.png')
-    Img_die_flip = pygame.image.load('../resource/die_flip.png')
+    Img = pygame.image.load('resource/zombie.png')
+    Img_flip = pygame.image.load('resource/zombie_flip.png')
+    Img_die = pygame.image.load('resource/die.png')
+    Img_die_flip = pygame.image.load('resource/die_flip.png')
     speed = 1
     rtion = 1
 
-    def __init__(self, level):
+    def __init__(self):
         super().__init__()
         if randint(0, 1):
             self.x = randint(WIDTH-100, WIDTH+100) % WIDTH
@@ -211,8 +207,7 @@ class Zombie(pygame.sprite.Sprite):
         self.range = 100
         self.aim = randint(0, 7)
         self.change_aim = randint(1, 10)
-        self.die = 25*level
-        self.power = 2*level
+        self.die = 25
         self.corps = 60
         self.attack = 1
 
@@ -249,7 +244,7 @@ class Zombie(pygame.sprite.Sprite):
             self.x -= self.speed * sin(self.aim)
             self.y -= self.speed * cos(self.aim)
         else:
-            player.die -= self.power/fps
+            player.die -= 1/fps
 
     def draw(self):
 
@@ -266,7 +261,6 @@ class Zombie(pygame.sprite.Sprite):
 
         self.rect = self.Img_loaded.get_rect()
         self.rect.center = (self.x, self.y)
-
         rectoff=[self.rect.x+offset.x,self.rect.y+offset.y]
         screen.blit(self.Img_loaded,rectoff)
 
@@ -277,8 +271,7 @@ class Zombie(pygame.sprite.Sprite):
 
 
 class Wall(pygame.sprite.Sprite):
-    Img = pygame.image.load('../resource/wall.jpg')
-
+    Img = pygame.image.load('resource/wall.jpg')
 
     def __init__(self, x, y):
         super().__init__()
@@ -341,25 +334,28 @@ def handle_input(player):
             player.Img_loaded = player.Img
 
 
+walls = []
+for i in range(3000):
+    walls.append(Wall(randint(-WIDTH*10,WIDTH*10),randint(-HEIGHT*10, HEIGHT*10)))
+
+
+zombies = pygame.sprite.Group()
+players = pygame.sprite.Group()
+
+screen = pygame.display.set_mode((WIDTH, HEIGHT))
+
 def start():
     players.add(Player(WIDTH/2, HEIGHT/2))
 
-
 def spawn():
-    global level
-    level += 1
     for i in range(25):
-        zombies.add(Zombie(level))
-
+        zombies.add(Zombie())
 
 def kill():
     for zombie in zombies:
         zombie.die = 0
 
 
-walls = []
-for i in range(3000):
-    walls.append(Wall(randint(-WIDTH*10,WIDTH*10),randint(-HEIGHT*10, HEIGHT*10)))
 
 while running:
     clock.tick(fps)
@@ -388,8 +384,18 @@ while running:
             rectoff=[i,j]
             screen.blit(ground, rectoff)
     # walls
+    # for i in range(int(offset.x), int(WIDTH+int(offset.x)), 50):
+    #     for j in range(int(offset.y),int( HEIGHT+int(offset.y)),50):
+    #             if (((i+int(offset.x))*(j+int(offset.y)))%13)==0 :
+    #                 wall_rect=wall.get_rect()
+    #                 rectoff=[i+int(offset.x),j+int(offset.y)]
+    #                 screen.blit(wall,rectoff)
+                
     for wall in walls:
         wall.draw()
+
+             
+
 
     # player
     for player in players:
