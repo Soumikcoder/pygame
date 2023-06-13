@@ -1,6 +1,6 @@
 import pygame
-from random import randint
-from math import sin, cos, pi, atan2
+
+
 from Player import *
 from zombie import *
 #
@@ -20,6 +20,13 @@ pygame.display.set_icon(icon)
 
 cng_player_img = 2
 ground = pygame.image.load('resource/ground.jpg')
+
+
+# text
+pygame.font.init() # you have to call this at the start, 
+                   # if you want to use this module.
+my_font = pygame.font.SysFont('Comic Sans MS', 20)
+# GAME_FONT = pygame.freetype.Font("Comic Sans MS.ttf", 24)
 
 # groups
 zombies = pygame.sprite.Group()
@@ -149,12 +156,14 @@ while running:
 
     # player
     for player in players:
-        player.draw(zombies, fps)
+        player.draw(zombies, fps,offset,screen)
 
     # zombies
     for zombie in zombies:
-        zombie.draw()
+        zombie.draw(offset,screen)
+    text_surface = my_font.render(f'Position:{offset.x:.2f},{offset.y:.2f}', False, (0,0, 0))
 
+    screen.blit(text_surface, (10,0))
     pygame.display.update()
 
 # p to create player
